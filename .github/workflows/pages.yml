@@ -30,14 +30,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Configure GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
       - name: Generate RSS
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          PUBLIC_FEED_URL: ${{ steps.pages.outputs.base_url }}/rss.xml
+          PUBLIC_FEED_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml
         run: |
           python youtube_rss.py --output public/rss.xml --json-output public/results.json
 
