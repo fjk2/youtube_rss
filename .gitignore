@@ -1,0 +1,5 @@
+.env
+run_youtube_rss.cmd
+.cache/
+__pycache__/
+*.pyc
