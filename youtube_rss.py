@@ -8,6 +8,7 @@ import csv
 import html
 import json
 import os
+import re
 import sys
 import textwrap
 import time
@@ -25,6 +26,7 @@ from typing import Iterable
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_WATCH_URL = "https://www.youtube.com/watch"
 ATOM_NS = "http://www.w3.org/2005/Atom"
+HASHTAG_RE = re.compile(r"(?<!\S)#[^\s#]+")
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,10 @@ class VideoItem:
     @property
     def url(self) -> str:
         return f"{YOUTUBE_WATCH_URL}?v={urllib.parse.quote(self.video_id)}"
+
+    @property
+    def display_title(self) -> str:
+        return format_display_title(self.channel_title, self.title)
 
 
 def load_dotenv(path: Path) -> None:
@@ -103,6 +109,23 @@ def parse_youtube_datetime(value: str) -> datetime:
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
     return datetime.fromisoformat(value).astimezone(timezone.utc)
+
+
+def strip_hashtags(value: str) -> str:
+    return " ".join(HASHTAG_RE.sub("", value).split()).strip()
+
+
+def truncate_text(value: str, max_chars: int) -> str:
+    value = value.strip()
+    return value[:max_chars] if len(value) > max_chars else value
+
+
+def format_display_title(channel_title: str, video_title: str) -> str:
+    channel = truncate_text(channel_title, 20)
+    title = strip_hashtags(video_title) or video_title.strip()
+    if channel and title:
+        return f"{channel} | {title}"
+    return title or channel
 
 
 def youtube_request(params: dict[str, str | int], timeout: int) -> dict:
@@ -220,13 +243,14 @@ def build_rss(
 
     for video in videos:
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = video.title
+        ET.SubElement(item, "title").text = video.display_title
         ET.SubElement(item, "link").text = video.url
         ET.SubElement(item, "guid", {"isPermaLink": "true"}).text = video.url
         ET.SubElement(item, "pubDate").text = format_datetime(video.published_at, usegmt=True)
 
         body_parts = [
             f"Channel: {video.channel_title}",
+            f"Original title: {video.title}",
             f"Matched query: {video.query}",
             f"Published: {video.published_at.isoformat()}",
         ]
@@ -243,7 +267,7 @@ def build_rss(
 def write_index(path: Path, videos: list[VideoItem], feed_name: str) -> None:
     rows = []
     for video in videos[:100]:
-        title = html.escape(video.title)
+        title = html.escape(video.display_title)
         channel = html.escape(video.channel_title)
         query = html.escape(video.query)
         published = html.escape(video.published_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
@@ -286,6 +310,7 @@ def write_json(path: Path, videos: list[VideoItem]) -> None:
         {
             "video_id": video.video_id,
             "title": video.title,
+            "display_title": video.display_title,
             "url": video.url,
             "description": video.description,
             "channel_title": video.channel_title,

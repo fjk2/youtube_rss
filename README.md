@@ -24,6 +24,8 @@ python .\youtube_rss.py --query-file .\youtube_query.txt --output .\public\rss.x
 
 YouTube Data APIの `search.list` は1分あたりの上限に当たりやすいため、デフォルトでは検索クエリごとに7秒待ちます。変更する場合は `--request-delay 10` のように指定できます。
 
+RSSの動画タイトルは、チャンネル名を20文字以内に切り詰め、ハッシュタグを除去した動画タイトルと合成します。例: `日本音楽チャンピオンYoutubeチャン | 日本音楽最新情報5月バージョン`
+
 永続的に保存したい場合は `.env.example` を `.env` にコピーして、`YOUTUBE_API_KEY` を設定しても動きます。
 
 ## Windowsタスクスケジューラ
