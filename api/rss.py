@@ -23,7 +23,13 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             queries = read_queries(ROOT / "youtube_query.txt")
-            videos = collect_videos(api_key, queries, max_results=25, timeout=25)
+            videos = collect_videos(
+                api_key,
+                queries,
+                max_results=25,
+                timeout=25,
+                request_delay=7,
+            )
             scheme = self.headers.get("x-forwarded-proto", "https")
             host = self.headers.get("host", "")
             feed_url = f"{scheme}://{host}/api/rss" if host else ""

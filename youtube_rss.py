@@ -10,13 +10,14 @@ import json
 import os
 import sys
 import textwrap
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from email.utils import format_datetime, parsedate_to_datetime
+from email.utils import format_datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -172,10 +173,14 @@ def collect_videos(
     *,
     max_results: int,
     timeout: int,
+    request_delay: float,
 ) -> list[VideoItem]:
     now = datetime.now(timezone.utc)
     videos_by_id: dict[str, VideoItem] = {}
-    for query in queries:
+    for index, query in enumerate(queries):
+        if index > 0 and request_delay > 0:
+            time.sleep(request_delay)
+        print(f"searching: {query.text} ({query.days} day(s))", flush=True)
         for video in search_videos(
             api_key,
             query,
@@ -300,6 +305,7 @@ def generate_feed(
     api_key: str,
     max_results: int,
     timeout: int,
+    request_delay: float,
     title: str,
     description: str,
     feed_url: str,
@@ -307,7 +313,13 @@ def generate_feed(
     create_index: bool = True,
 ) -> list[VideoItem]:
     queries = read_queries(query_file)
-    videos = collect_videos(api_key, queries, max_results=max_results, timeout=timeout)
+    videos = collect_videos(
+        api_key,
+        queries,
+        max_results=max_results,
+        timeout=timeout,
+        request_delay=request_delay,
+    )
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_bytes(
@@ -331,6 +343,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--max-results", default=25, type=int)
     parser.add_argument("--timeout", default=30, type=int)
+    parser.add_argument(
+        "--request-delay",
+        default=float(os.environ.get("YOUTUBE_REQUEST_DELAY", "7")),
+        type=float,
+        help="Seconds to wait between YouTube search requests.",
+    )
     parser.add_argument("--title", default="YouTube Search RSS")
     parser.add_argument(
         "--description",
@@ -365,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
             api_key=api_key,
             max_results=args.max_results,
             timeout=args.timeout,
+            request_delay=args.request_delay,
             title=args.title,
             description=args.description,
             feed_url=args.feed_url,
