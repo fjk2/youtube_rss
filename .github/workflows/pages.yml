@@ -3,7 +3,7 @@ name: Build YouTube RSS
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */12 * * *"
+    - cron: "30 7,19 * * *"
 
 permissions:
   contents: read
