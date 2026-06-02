@@ -5,7 +5,7 @@
 "MCあんにゅ",1
 "NaNoMoRaL" OR "雨宮未來",1
 "諭吉佳作",1
-"BABYMETAL" -Reaction -cover -kpop -#kpop,1
+"BABYMETAL" -Reaction -cover,1
 "吉田豪" OR "豪の部屋",1
 "南波一海" OR "アイドル三十六房",1
 "町山智浩" -radio-land,1
